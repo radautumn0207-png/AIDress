@@ -1,6 +1,6 @@
 import os, base64, requests, json, time
 
-API_KEY = os.getenv("
+API_KEY = os.getenv("GEMINI_API_KEY")
 IMAGE_FOLDER = "images"
 DATA_JSON = "data.json"
 
