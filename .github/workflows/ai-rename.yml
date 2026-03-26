@@ -21,18 +21,17 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: 安裝必要套件
+      - name: Install Dependencies
         run: pip install requests
 
-      - name: 執行 AI 辨識與改名
+      - name: 🚀 執行 14 段辨識與改名
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      - name: 推送變更回 GitHub
+      - name: 💾 推送變更回 GitHub (含容錯機制)
         run: |
           git config --global user.name "AI-Asset-Bot"
           git config --global user.email "actions@github.com"
-          git add images/ data.json
-          git commit -m "✨ AI 自動更新 14 段資產標籤 [skip ci]" || exit 0
-          git push
+          git add .
+          git diff --quiet && git diff --staged --quiet || (git commit -m "✨ AI 自動更新 14 段資產標籤 [skip ci]" && git push)
