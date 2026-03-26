@@ -34,7 +34,7 @@
                 renderGallery(wardrobeData);
                 document.getElementById('status').innerText = `共 ${data.length} 件單品`;
             })
-            .catch(err => document.getElementById('status').innerText = '尚無資料或讀取失敗');
+            .catch(err => document.getElementById('status').innerText = '尚無資料，請先上傳照片並等待 AI 處理完成');
 
         // 渲染畫面
         function renderGallery(data) {
@@ -50,9 +50,10 @@
 
         // 尋找相似款邏輯 (Levenshtein Distance)
         function findSimilar(targetTags) {
-            document.getElementById('status').innerText = '正在為您篩選相似單品...';
+            document.getElementById('status').innerText = '正在為您過濾關聯單品...';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
+            // 抓取 13 段細項進行比對
             const targetDetails = targetTags.split('_')[1] || targetTags;
 
             const results = wardrobeData.map(item => {
@@ -61,12 +62,12 @@
                 return { ...item, score: score };
             });
 
-            // 依相似度排序，最高分排前面
+            // 排序並渲染 (分數越高越相似)
             results.sort((a, b) => b.score - a.score);
             renderGallery(results);
         }
 
-        // 字串距離計算
+        // 字串距離計算演算法
         function calculateSimilarity(a, b) {
             if(!a || !b) return -99;
             const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
