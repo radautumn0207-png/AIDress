@@ -1,0 +1,38 @@
+name: AI Auto Rename Assets
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'images/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ai-process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 安裝必要套件
+        run: pip install requests
+
+      - name: 執行 AI 辨識與改名
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python main.py
+
+      - name: 推送變更回 GitHub
+        run: |
+          git config --global user.name "AI-Asset-Bot"
+          git config --global user.email "actions@github.com"
+          git add images/ data.json
+          git commit -m "✨ AI 自動更新 14 段資產標籤 [skip ci]" || exit 0
+          git push
