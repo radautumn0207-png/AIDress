@@ -5,8 +5,8 @@ IMAGE_FOLDER = "images"
 DATA_JSON = "data.json"
 
 def get_ai_tags(image_path):
-    # 🌟 換成最穩定的 gemini-1.5-flash 免費引擎
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # 🌟 換回最新的 gemini-2.0-flash 引擎
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
     
     with open(image_path, "rb") as f:
         img_data = base64.b64encode(f.read()).decode("utf-8")
@@ -42,6 +42,7 @@ def get_ai_tags(image_path):
         response = requests.post(url, json=payload, timeout=30)
         res = response.json()
         
+        # 🔍 保留顯影劑：如果沒有回傳標籤，直接印出 Google 的真實拒絕理由
         if 'candidates' not in res:
             print(f"❌ Google API 拒絕回應，真實原因：{res}")
             return "錯誤"
@@ -75,7 +76,7 @@ def run():
             os.rename(os.path.join(IMAGE_FOLDER, f), os.path.join(IMAGE_FOLDER, new_name))
             print(f"✅ 命名成功: {new_name}")
         
-        # 🌟 安全降速：每張照片處理完暫停 5 秒，確保絕不超過免費配額 (15次/分鐘)
+        # 🌟 安全防線：每張照片處理完暫停 5 秒，確保絕不觸發免費版頻率限制
         time.sleep(5) 
 
     # 絕對生成 data.json
