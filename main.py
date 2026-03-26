@@ -38,16 +38,23 @@ def get_ai_tags(image_path):
     }
 
     try:
-        res = requests.post(url, json=payload, timeout=30).json()
+        response = requests.post(url, json=payload, timeout=30)
+        res = response.json()
+        
+        # 🔍 核心偵錯邏輯：如果包裹裡沒有 candidates，直接印出 Google 的真實回覆
+        if 'candidates' not in res:
+            print(f"❌ Google API 拒絕回應，真實原因：{res}")
+            return "錯誤"
+            
         tag = res['candidates'][0]['content']['parts'][0]['text'].strip()
         return tag.replace('\n', '').replace(' ', '').replace('"', '').replace("'", "")
     except Exception as e:
-        print(f"❌ API 異常: {e}")
+        print(f"❌ 程式崩潰異常: {e}")
         return "錯誤"
 
 def run():
     if not API_KEY:
-        print("❌ 致命錯誤：找不到 GEMINI_API_KEY。請檢查 GitHub Secrets。")
+        print("❌ 致命錯誤：找不到 GEMINI_API_KEY。")
         return
 
     if not os.path.exists(IMAGE_FOLDER): 
@@ -56,7 +63,6 @@ def run():
     files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     
     for f in files:
-        # 如果已經是 14 段格式，則跳過不消耗 API
         if f.count('-') == 12 and '_' in f: 
             continue
         
@@ -68,9 +74,9 @@ def run():
             new_name = f"{tag}_{int(time.time())}{ext}"
             os.rename(os.path.join(IMAGE_FOLDER, f), os.path.join(IMAGE_FOLDER, new_name))
             print(f"✅ 命名成功: {new_name}")
-        time.sleep(2) # 避免觸發 API 頻率限制
+        time.sleep(2)
 
-    # 絕對生成 data.json：重新掃描資料夾內所有已命名的圖片
+    # 絕對生成 data.json
     all_valid_files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.jpg', '.jpeg', '.png')) and f.count('-') == 12]
     new_data = [{"url": f"images/{img}", "tags": img.split('_')[0], "filename": img} for img in all_valid_files]
     
