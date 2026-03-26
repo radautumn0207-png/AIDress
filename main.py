@@ -1,6 +1,6 @@
 import os, base64, requests, json, time
 
-API_KEY = os.getenv("AIzaSyDXzG5AbgcXqjFQcPtGY-GrYRJQ10RlX1g")
+API_KEY = os.getenv("
 IMAGE_FOLDER = "images"
 DATA_JSON = "data.json"
 
