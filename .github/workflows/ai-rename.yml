@@ -24,6 +24,25 @@ jobs:
       - name: Install Dependencies
         run: pip install requests
 
+      - name: 🔍 系統環境變數暴力檢測 (OS Level Check)
+        env:
+          TEST_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "=== 系統底層金鑰檢測開始 ==="
+          if [ -z "$TEST_KEY" ]; then
+            echo "❌ 結論：GitHub 伺服器完全沒有把金鑰交出來！"
+            echo "👉 可能原因："
+            echo "   1. 剛才的 Public Leak 警報讓系統暫時鎖死了這個儲存庫的 Secrets 讀取權限。"
+            echo "   2. 新金鑰不小心建到了 'Environment secrets' 而不是 'Repository secrets'。"
+            echo "   3. GitHub 伺服器快取尚未同步。"
+            echo "🚨 將在此強制中斷流程，不執行 Python。"
+            exit 1
+          else
+            echo "✅ 結論：作業系統有成功拿到金鑰！字元長度為 ${#TEST_KEY}。"
+            echo "👉 金鑰通道暢通。這代表 GitHub 後台沒問題，準備進入 Python 執行階段。"
+          fi
+          echo "============================"
+
       - name: 🚀 執行 14 段辨識與改名
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
