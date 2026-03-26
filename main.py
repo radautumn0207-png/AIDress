@@ -4,8 +4,28 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 IMAGE_FOLDER = "images"
 DATA_JSON = "data.json"
 
+def check_server_location():
+    """偵測 GitHub Action 虛擬機的物理位置"""
+    print("🌍 [系統診斷] 啟動伺服器位置探測...")
+    try:
+        # 使用 ipinfo 服務反查當前機器位置
+        res = requests.get("https://ipinfo.io/json", timeout=5).json()
+        country = res.get("country", "Unknown")
+        ip = res.get("ip", "Unknown")
+        print(f"📍 當前伺服器 IP: {ip}, 國家代碼: {country}")
+        
+        # 歐洲經濟區(EEA)與英國 (Gemini 免費版完全封鎖區)
+        eu_countries = ['GB', 'FR', 'DE', 'IE', 'NL', 'IT', 'ES', 'SE', 'CH', 'AT', 'BE', 'DK', 'FI', 'NO', 'PL']
+        if country in eu_countries:
+            print("⚠️ [致命警告] 運氣不佳，GitHub 將此任務分配到了歐洲管制區！")
+            print("⚠️ 接下來的 API 呼叫有 99% 機率會被 Google 依法規阻擋並回傳 limit: 0。")
+        else:
+            print("✅ [通道暢通] 伺服器位於非管制區，準備呼叫 Gemini 2.0 引擎。")
+    except Exception as e:
+        print(f"🌍 探測伺服器位置失敗，略過檢查... ({e})")
+    print("-" * 40)
+
 def get_ai_tags(image_path):
-    # 🌟 換回最新的 gemini-2.0-flash 引擎
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
     
     with open(image_path, "rb") as f:
@@ -42,9 +62,8 @@ def get_ai_tags(image_path):
         response = requests.post(url, json=payload, timeout=30)
         res = response.json()
         
-        # 🔍 保留顯影劑：如果沒有回傳標籤，直接印出 Google 的真實拒絕理由
         if 'candidates' not in res:
-            print(f"❌ Google API 拒絕回應，真實原因：{res}")
+            print(f"❌ API 拒絕回應，真實原因：{res}")
             return "錯誤"
             
         tag = res['candidates'][0]['content']['parts'][0]['text'].strip()
@@ -57,6 +76,9 @@ def run():
     if not API_KEY:
         print("❌ 致命錯誤：找不到 GEMINI_API_KEY。")
         return
+
+    # 執行物理位置觀測
+    check_server_location()
 
     if not os.path.exists(IMAGE_FOLDER): 
         os.makedirs(IMAGE_FOLDER)
@@ -76,10 +98,10 @@ def run():
             os.rename(os.path.join(IMAGE_FOLDER, f), os.path.join(IMAGE_FOLDER, new_name))
             print(f"✅ 命名成功: {new_name}")
         
-        # 🌟 安全防線：每張照片處理完暫停 5 秒，確保絕不觸發免費版頻率限制
+        # 安全降速，避免觸發配額上限
         time.sleep(5) 
 
-    # 絕對生成 data.json
+    # 生成 JSON
     all_valid_files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.jpg', '.jpeg', '.png')) and f.count('-') == 12]
     new_data = [{"url": f"images/{img}", "tags": img.split('_')[0], "filename": img} for img in all_valid_files]
     
