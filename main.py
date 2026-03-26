@@ -42,36 +42,41 @@ def get_ai_tags(image_path):
         tag = res['candidates'][0]['content']['parts'][0]['text'].strip()
         return tag.replace('\n', '').replace(' ', '').replace('"', '').replace("'", "")
     except Exception as e:
-        print(f"API 錯誤: {e}")
+        print(f"❌ API 異常: {e}")
         return "錯誤"
 
 def run():
-    if not os.path.exists(IMAGE_FOLDER): os.makedirs(IMAGE_FOLDER)
+    if not API_KEY:
+        print("❌ 致命錯誤：找不到 GEMINI_API_KEY。請檢查 GitHub Secrets。")
+        return
+
+    if not os.path.exists(IMAGE_FOLDER): 
+        os.makedirs(IMAGE_FOLDER)
+
     files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-    updated = False
     
     for f in files:
-        if f.count('-') == 12 and '_' in f: continue
+        # 如果已經是 14 段格式，則跳過不消耗 API
+        if f.count('-') == 12 and '_' in f: 
+            continue
         
-        print(f"正在辨識: {f}")
+        print(f"🔍 正在辨識: {f}")
         tag = get_ai_tags(os.path.join(IMAGE_FOLDER, f))
         
         if tag != "錯誤" and "_" in tag and tag.count('-') == 12:
             ext = os.path.splitext(f)[1]
             new_name = f"{tag}_{int(time.time())}{ext}"
             os.rename(os.path.join(IMAGE_FOLDER, f), os.path.join(IMAGE_FOLDER, new_name))
-            updated = True
-            print(f"命名成功: {new_name}")
-        time.sleep(2)
+            print(f"✅ 命名成功: {new_name}")
+        time.sleep(2) # 避免觸發 API 頻率限制
 
-    if updated or not os.path.exists(DATA_JSON):
-        # 重新掃描已命名的檔案並寫入 JSON
-        all_files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.jpg', '.jpeg', '.png')) and f.count('-') == 12]
-        new_data = [{"url": f"images/{img}", "tags": img.split('_')[0], "filename": img} for img in all_files]
-        with open(DATA_JSON, "w", encoding="utf-8") as j:
-            json.dump(new_data, j, indent=4, ensure_ascii=False)
-        print("data.json 已同步")
+    # 絕對生成 data.json：重新掃描資料夾內所有已命名的圖片
+    all_valid_files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith(('.jpg', '.jpeg', '.png')) and f.count('-') == 12]
+    new_data = [{"url": f"images/{img}", "tags": img.split('_')[0], "filename": img} for img in all_valid_files]
+    
+    with open(DATA_JSON, "w", encoding="utf-8") as j:
+        json.dump(new_data, j, indent=4, ensure_ascii=False)
+    print(f"🚀 data.json 已同步，共記錄 {len(all_valid_files)} 筆資產。")
 
 if __name__ == "__main__":
-    if not API_KEY: print("缺少 API KEY")
-    else: run()
+    run()
